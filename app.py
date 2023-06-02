@@ -51,33 +51,23 @@ y_pred = clf.predict(X_test)
 # Decode the predicted labels back to original names
 y_pred_decoded = label_encoder.inverse_transform(y_pred)
 
-# Calculate accuracy of the model
+# Calculate & print accuracy of the model to console
 accuracy = accuracy_score(y_test, y_pred)
-print('Accuracy of the ML model is :', accuracy)
+print('\n\n####################\nAccuracy of the ML model is :', accuracy,'\n####################\n\n\n')
 
 
 def predict_repairer(department, machine, clf, label_encoder, training_columns):
     # Prepare the input data for prediction
     input_data = pd.DataFrame({'Department': [department], 'Machine': [machine]})
-
-    # Perform one-hot encoding on the input data
     input_data_encoded = pd.get_dummies(input_data)
-
-    # Align the input data columns with the training columns
     input_data_encoded = input_data_encoded.reindex(columns=training_columns, fill_value=0)
-
-    # Make predictions on the input data
     predicted_label = clf.predict(input_data_encoded)
-
     return predicted_label[0]
 
 # Define the predict endpoint
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Get the request data
     request_data = request.get_json()
-
-    # Extract the department and machine from the request data
     department = request_data['department']
     machine = request_data['machine']
 
