@@ -6,21 +6,33 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 from flask_cors import CORS
 
-
 app = Flask(__name__)
 CORS(app)
 
-
-# load the exel data set
-data = pd.read_excel('dataset.xlsx')
-
-#select the data Frame
+#data = pd.read_excel('dataset.xlsx')
+data = pd.read_excel('book.xlsx')
 df = data[['Department','Machine','Repair done by2']]
-
-# Dropping null values
 df = df.dropna()
 
-#Prepare X , Y data sets
+machine_counts = data['Machine'].value_counts()
+machines_to_remove = machine_counts[machine_counts < 20].index
+data = data[~data['Machine'].isin(machines_to_remove)]
+
+dep_counts = data['Department'].value_counts()
+dep_to_remove = dep_counts[dep_counts < 20].index
+data = data[~data['Department'].isin(dep_to_remove)]
+
+emp_counts = data['Repair done by2'].value_counts()
+emp_to_remove = emp_counts[emp_counts<10].index
+data = data[~data['Repair done by2'].isin(emp_to_remove)]
+
+data = data[data['Repair done by2'].notnull()]
+data = data[~data['Repair done by2'].isin(['Chinthaka', 'Gihan','chinthaka','Sahan'])]
+
+# Verify unique values in the filtered target variable
+unique_values = data['Repair done by2'].unique()
+print(unique_values)
+
 X = data[['Department', 'Machine']]
 Y = data['Repair done by2']
 
@@ -37,23 +49,19 @@ training_columns = list(X.columns)
 
 
 # Split the dataset into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Initialize the classification algorithm (Decision Tree classifier in this example)
 clf = DecisionTreeClassifier()
 
-# Train the model
 clf.fit(X_train, y_train)
 
-# Make predictions on the test set
 y_pred = clf.predict(X_test)
 
 # Decode the predicted labels back to original names
 y_pred_decoded = label_encoder.inverse_transform(y_pred)
 
-# Calculate & print accuracy of the model to console
 accuracy = accuracy_score(y_test, y_pred)
-print('\n\n####################\nAccuracy of the ML model is :', accuracy,'\n####################\n\n\n')
+print('Accuracy:', accuracy)
 
 
 def predict_repairer(department, machine, clf, label_encoder, training_columns):
@@ -64,7 +72,7 @@ def predict_repairer(department, machine, clf, label_encoder, training_columns):
     predicted_label = clf.predict(input_data_encoded)
     return predicted_label[0]
 
-# Define the predict endpoint
+
 @app.route('/predict', methods=['POST'])
 def predict():
     request_data = request.get_json()
@@ -79,6 +87,6 @@ def predict():
     response = {'predicted_repairer': predicted_repairer}
     return jsonify(response)
 
-# Run the Flask app
+
 if __name__ == '__main__':
     app.run()
